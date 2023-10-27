@@ -191,6 +191,8 @@
  max_pol_nn             6                             !< Maximum number of polarization neighbours
  logsamp               N , Y                          !< Sample measurements logarithmically !< Sample measurements logarithmically
  do_prn_torques        N , Y                          !< Flag governing file output of resulting torques (Y/N)
+ do_prn_STT_torques    N , Y                          !< Flag governing file output of resulting torques (Y/N)
+ STT_torques_buff          2                              !< Buffer size for the resulting torques
  torques_buff          2                              !< Buffer size for the resulting torques
  do_phonspec           -                              !< Calculate phonon spectra (N/Y)
  do_phondos            -                              !< Calculate phonon density of states (N/Y/F)

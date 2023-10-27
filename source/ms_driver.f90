@@ -459,7 +459,7 @@ contains
             ham%max_no_neigh,                                                       &
             ham%nlist,ham%ncoup,ham%nlistsize,ham%aham,thermal_field,beff,beff1,    &
             beff3,coord,ham%ind_list_full,ham%ind_nlistsize,ham%ind_nlist,          &
-            ham%max_no_neigh_ind,ham%sus_ind,do_mom_legacy,mode)
+            ham%max_no_neigh_ind,ham%sus_ind,do_mom_legacy,mode,btorque)
 
          ! Calculate total and term resolved energies
          if(plotenergy>0) then
@@ -677,7 +677,7 @@ contains
          temprescalegrad,real_time_measure,delta_t,logsamp,ham%max_no_neigh,ham%nlist,ham%ncoup,&
          ham%nlistsize,ham%aham,thermal_field,beff,beff1,beff3,coord,               &
          ham%ind_list_full,ham%ind_nlistsize,ham%ind_nlist,ham%max_no_neigh_ind,    &
-         ham%sus_ind,do_mom_legacy,mode)
+         ham%sus_ind,do_mom_legacy,mode,btorque)
 
       ! Print remaining measurements
       call flush_measurements(Natom,Mensemble,NT,NA,N1,N2,N3,simid,mstep,emom,mmom, &

@@ -19,13 +19,16 @@ module prn_fields
    integer :: thermfield_step         !< Interval between thermal field trajectories
    integer :: thermfield_buff         !< Buffer size for the stochastic field
    integer :: torques_step            !< Interval between consecutive prints of the resulting torques
+   integer :: STT_torques_step            !< Interval between consecutive prints of the resulting torques
    integer :: torques_buff            !< Buffer size for the resulting torques
+   integer :: STT_torques_buff            !< Buffer size for the resulting torques
    integer :: larm_step               !< Interval between consecutive prints of the larmor frequencies
    integer :: larm_buff               !< Buffer size for the larmor frequencies
    integer :: larm_dos_size           !< Number of windows for larmor dos histogram
    character(len=1) :: do_prn_beff    !< Flag governing file output of total effective fields (Y/N)
    character(len=1) :: do_prn_binteff !< Flag governing file output of internal effective fields (Y/N)
    character(len=1) :: do_prn_torques !< Flag governing file output of resulting torques (Y/N)
+   character(len=1) :: do_prn_STT_torques !< Flag governing file output of resulting torques (Y/N)
    character(len=1) :: do_thermfield  !< Thermal fields trajectory
    character(len=1) :: do_larmor_loc  !< Calculate local precession frequencies from local field (Y/N)
    character(len=1) :: do_larmor_dos  !< Calculate average precession frequencies from local field (Y/N)
@@ -34,16 +37,19 @@ module prn_fields
    integer :: bcount_beff    !< Counter of buffer for total field
    integer :: bcount_binteff !< Counter of buffer for internal field
    integer :: bcount_torques !< Counter of buffer for toruqes
+   integer :: bcount_STT_torques !< Counter of buffer for toruqes
    integer :: bcount_therm   !< Counter of buffer for stochastic field
    integer :: bcount_larm    !< Counter of buffer for Larmor frequencies
    real(dblprec), dimension(:), allocatable :: indxb_beff         !< Step counter for total field
    real(dblprec), dimension(:), allocatable :: indxb_binteff      !< Step counter for internal field
    real(dblprec), dimension(:), allocatable :: indxb_torques      !< Step counter for resulting torques
+   real(dblprec), dimension(:), allocatable :: indxb_STT_torques      !< Step counter for resulting torques
    real(dblprec), dimension(:), allocatable :: indxb_larm         !< Step counter for total field
    real(dblprec), dimension(:), allocatable :: indxb_therm        !< Step counter for stochastic field
    real(dblprec), dimension(:,:,:,:), allocatable :: beffb        !< Buffer the site dependent total field
    real(dblprec), dimension(:,:,:,:), allocatable :: binteffb     !< Buffer the site resulting torques
    real(dblprec), dimension(:,:,:,:), allocatable :: torquesb     !< Buffer the site dependent internal field
+   real(dblprec), dimension(:,:,:,:), allocatable :: STT_torquesb     !< Buffer the site dependent internal field
    real(dblprec), dimension(:,:,:), allocatable :: larmb          !< Buffer the site dependent larmor frequencies
    real(dblprec), dimension(:,:,:,:), allocatable :: therm_fieldb !< Buffer the site dependent stochastic field
 
@@ -54,7 +60,7 @@ contains
    !> Wrapper routine to print the thermal and effective fields
    !subroutine print_fields(mstep,sstep,Natom,Mensemble,simid,real_time_measure,delta_t,beff,thermal_field,emom)
    subroutine print_fields(mstep, sstep, Natom, Mensemble, simid, real_time_measure, delta_t, &
-         beff, thermal_field, beff1, beff3, emom)
+         beff, thermal_field, beff1, beff3, emom,btorque)
 
       implicit none
 
@@ -68,6 +74,7 @@ contains
       real(dblprec), dimension(3,Natom,Mensemble), intent(inout) :: beff          !< Current site dependent total effective field
       real(dblprec), dimension(3,Natom,Mensemble), intent(inout) :: beff1         !< Current site dependent internal effective field
       real(dblprec), dimension(3,Natom,Mensemble), intent(inout) :: beff3         !< Current site dependent internal field from mixed spin-lattice Hamiltonian
+      real(dblprec), dimension(3,Natom,Mensemble), intent(inout) :: btorque          !< Current site dependent total effective field
       real(dblprec), dimension(3,Natom,Mensemble), intent(inout) :: thermal_field !< Current site dependent stochastic field
       real(dblprec), dimension(:,:,:), intent(in)    :: emom   !< Current unit moment vector
 
@@ -110,7 +117,7 @@ contains
       endif
 
 
-      ! Total site dependent field
+      ! Total site dependent field(exchange field)
       if (do_prn_binteff=='Y') then
 
          if (mod(sstep-1,binteff_step)==0) then
@@ -143,6 +150,26 @@ contains
                bcount_larm=1
             else
                bcount_larm=bcount_larm+1
+            endif
+
+         endif
+
+      endif
+
+
+      ! Total site dependent field
+      if (do_prn_STT_torques=='Y') then
+         
+         if (mod(sstep-1,STT_torques_step)==0) then
+            ! Write step to buffer
+            call buffer_STT_torques(Natom, Mensemble, mstep-1,btorque,&
+               bcount_STT_torques, delta_t, real_time_measure, emom)
+            if (bcount_STT_torques==STT_torques_buff) then
+               ! write buffer to file
+               call prn_STT_torques(Natom, Mensemble, simid,real_time_measure)
+               bcount_STT_torques=1
+            else
+               bcount_STT_torques=bcount_STT_torques+1
             endif
 
          endif
@@ -207,6 +234,12 @@ contains
          call prn_torques(Natom, Mensemble, simid,real_time_measure)
       endif
 
+      if (do_prn_STT_torques=='Y') then
+         ! Write buffer to file
+         bcount_STT_torques=bcount_STT_torques-1
+         call prn_STT_torques(Natom, Mensemble, simid,real_time_measure)
+      endif
+
    end subroutine flush_prn_fields
 
 
@@ -221,6 +254,7 @@ contains
       do_larmor_loc     = 'N'
       do_larmor_dos     = 'N'
       do_prn_torques    = 'N'
+      do_prn_STT_torques= 'Y'
       thermfield_step   = 1000
       thermfield_buff   = 10
       beff_step         = 1000
@@ -229,6 +263,8 @@ contains
       binteff_buff      = 10
       torques_step      = 1000
       torques_buff      = 10
+      STT_torques_step      = 1000
+      STT_torques_buff      = 10
       larm_step         = 1000
       larm_buff         = 10
       larm_dos_size     = 1000
@@ -255,7 +291,7 @@ contains
          bcount_larm=1
          bcount_therm=1
          bcount_torques=1
-
+         bcount_STT_torques=1
          if (do_thermfield=='Y') then
             allocate(therm_fieldb(3,Natom,thermfield_buff,Mensemble),stat=i_stat)
             call memocc(i_stat,product(shape(therm_fieldb))*kind(therm_fieldb),'therm_fieldb','allocate_measurements')
@@ -282,6 +318,13 @@ contains
             call memocc(i_stat,product(shape(torquesb))*kind(torquesb),'torquesb','allocate_measurements')
             allocate(indxb_torques(torques_buff),stat=i_stat)
             call memocc(i_stat,product(shape(indxb_torques))*kind(indxb_torques),'indxb_torques','allocate_measurements')
+         endif
+
+         if (do_prn_STT_torques=='Y') then
+            allocate(STT_torquesb(3,Natom,STT_torques_buff,Mensemble),stat=i_stat)
+            call memocc(i_stat,product(shape(STT_torquesb))*kind(STT_torquesb),'STT_torquesb','allocate_measurements')
+            allocate(indxb_STT_torques(STT_torques_buff),stat=i_stat)
+            call memocc(i_stat,product(shape(indxb_STT_torques))*kind(indxb_STT_torques),'indxb_STT_torques','allocate_measurements')
          endif
 
          if (do_larmor_loc=='Y'.or.do_larmor_dos=='Y') then
@@ -327,6 +370,15 @@ contains
             i_all=-product(shape(indxb_torques))*kind(indxb_torques)
             deallocate(indxb_torques,stat=i_stat)
             call memocc(i_stat,i_all,'indxb_torques','allocate_measurements')
+         endif
+
+         if (do_prn_STT_torques=='Y') then
+            i_all=-product(shape(STT_torquesb))*kind(STT_torquesb)
+            deallocate(STT_torquesb,stat=i_stat)
+            call memocc(i_stat,i_all,'STT_torquesb','allocate_measurements')
+            i_all=-product(shape(indxb_STT_torques))*kind(indxb_STT_torques)
+            deallocate(indxb_STT_torques,stat=i_stat)
+            call memocc(i_stat,i_all,'indxb_STT_torques','allocate_measurements')
          endif
 
          if (do_larmor_loc=='Y'.or.do_larmor_dos=='Y') then
@@ -556,6 +608,41 @@ contains
 
    end subroutine buffer_torques
 
+    subroutine buffer_STT_torques(Natom, Mensemble, mstep,btorque,&
+         bcount_STT_torques,delta_t,real_time_measure,emom)
+      !
+
+      implicit none
+
+      integer, intent(in) :: mstep !< Current simulation step
+      integer, intent(in) :: Natom !< Number of atoms in system
+      integer, intent(in) :: Mensemble !< Number of ensembles
+      integer, intent(in) :: bcount_STT_torques   !< Counter of buffer for total effective field
+      real(dblprec), intent(in) :: delta_t !< Current measurement time
+      real(dblprec), dimension(3,Natom,Mensemble), intent(in) :: btorque          !< Current effective field from the hamiltonian
+     
+      character(len=1), intent(in) :: real_time_measure !< Measurements displayed in real time
+      real(dblprec), dimension(:,:,:), intent(in)    :: emom   !< Current unit moment vector
+
+      !.. Local scalar variables
+      integer :: i,k
+      
+      do k=1, Mensemble
+         do i=1, Natom
+          
+            STT_torquesb(1:3,i,bcount_STT_torques,k)=btorque(1:3,i,k)
+         end do
+      end do
+     
+      if (real_time_measure=='Y') then
+         indxb_STT_torques(bcount_STT_torques)=mstep*delta_t
+      else
+         indxb_STT_torques(bcount_STT_torques)=mstep
+      endif
+
+   end subroutine buffer_STT_torques
+
+
 
    !> Print total effective field
    subroutine prn_larmorfreq(Natom, Mensemble, simid,real_time_measure)
@@ -726,6 +813,46 @@ contains
       121 format(es12.4,i8,i8,8x,8es12.4)
 
    end subroutine prn_internalbfields
+
+      !> Print magnetic torques
+   subroutine prn_STT_torques(Natom, Mensemble, simid, real_time_measure)
+      !
+      !.. Implicit declarations
+      implicit none
+
+      integer, intent(in) :: Natom     !< Number of atoms in system
+      integer, intent(in) :: Mensemble !< Number of ensembles
+      character(len=8), intent(in) :: simid !< Name of the simulation
+      character(len=1), intent(in) :: real_time_measure !< Measurements displayed in real time
+
+      ! Local variables
+      integer :: i,j,k
+      character(len=30) :: filn
+
+      ! Print thermal fields to output file if specified
+      ! Remember to remove old data since the write statement appends new data to the file
+
+      write(filn,'(''STTtorques.'',a,''.out'')') trim(simid)
+      open(ofileno,file=filn, position = 'APPEND',form = 'formatted')
+      do k=1, bcount_STT_torques
+         do j=1,Mensemble
+            do i=1,Natom
+                  write (ofileno,121) indxb_STT_torques(k), i, j, STT_torquesb(1:3,i,k,j), norm2(torquesb(1:3,i,k,j))
+            end do
+         end do
+      enddo
+      close(ofileno)
+      
+      return
+
+      write(*,*) 'Error writing the internal field file'
+
+      121 format(es12.4,i8,i8,8x,4es12.4)
+
+   end subroutine prn_STT_torques
+
+
+
 
    !> Print magnetic torques
    subroutine prn_torques(Natom, Mensemble, simid, real_time_measure)

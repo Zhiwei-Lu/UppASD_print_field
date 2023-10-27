@@ -227,6 +227,7 @@ contains
       use InputData
       use FieldData,       only : external_field, sitefld, time_external_field,&
          allocation_field_time, thermal_field, beff, beff1, beff3
+      use SpinTorques
       use SystemData
       use MonteCarlo
       use DemagField
@@ -311,7 +312,7 @@ contains
             ham%max_no_neigh,ham%nlist,ham%ncoup,                                   &
             ham%nlistsize,ham%aham,thermal_field,beff,beff1,beff3,coord,            &
             ham%ind_list_full,ham%ind_nlistsize,ham%ind_nlist,ham%max_no_neigh_ind, &
-            ham%sus_ind,do_mom_legacy,mode)
+            ham%sus_ind,do_mom_legacy,mode,btorque)
          call timing(0,'Measurement   ','OF')
 
          ! Calculate total and term resolved energies

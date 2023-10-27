@@ -112,6 +112,7 @@ plotenergy    1        0 , 1                     !< Calculate and plot energy (0
 do_prn_beff            Y                         !< Flag governing file output of total effective fields (Y/N)
 do_prn_binteff         Y                         !< Flag governing file output of internal effective fields (Y/N)
 do_prn_torques         Y                         !< Flag governing file output of resulting torques (Y/N)
+
 do_thermfield          Y                         !< Thermal fields trajectory
 do_larmor_loc          Y                         !< Calculate local precession frequencies from local field (Y/N)
 do_larmor_dos          Y                         !< Calculate average precession frequencies from local field (Y/N)

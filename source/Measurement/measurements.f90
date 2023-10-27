@@ -105,7 +105,7 @@ contains
       mmom,Nchmax,do_ralloy,Natom_full,asite_ch,achem_ch,atype,plotenergy,Temp,     &
       temprescale,temprescalegrad,real_time_measure,delta_t,logsamp,max_no_neigh,nlist,ncoup,       &
       nlistsize,aham,thermal_field,beff,beff1,beff3,coord,ind_list_full,            &
-      ind_nlistsize,ind_nlist,max_no_neigh_ind,sus_ind,do_mom_legacy,mode)
+      ind_nlistsize,ind_nlist,max_no_neigh_ind,sus_ind,do_mom_legacy,mode,btorque)
       !
       use prn_fields,       only : print_fields
       use prn_SpinIce,      only : print_vertices
@@ -162,7 +162,7 @@ contains
       real(dblprec), dimension(:,:,:), intent(inout) :: beff1 !< Current site dependent internal field from spin Hamiltonian
       real(dblprec), dimension(:,:,:), intent(inout) :: beff3 !< Current site dependent internal field from mixed spin-lattice Hamiltonian
       real(dblprec), dimension(:,:,:), intent(inout) :: thermal_field !< Current site dependent stochastic field
-
+      real(dblprec), dimension(:,:,:), intent(inout) :: btorque !< Current site dependent internal field from spin Hamiltonian
       ! Local variables
       integer :: sstep
 
@@ -184,7 +184,8 @@ contains
          Temp,temprescale,temprescalegrad,delta_t,real_time_measure,simid,mode)
       ! Print the effective and thermal fields
       call print_fields(mstep,sstep,Natom,Mensemble,simid,real_time_measure,delta_t,&
-         beff,thermal_field,beff1,beff3,emom)
+         beff,thermal_field,beff1,beff3,emom,btorque)
+
       ! Print topological information of the sample
       call print_topology(NT,NA,N1,N2,sstep,mstep,Natom,Mensemble,delta_t,             &
          real_time_measure,emomM,emom,simid,atype)

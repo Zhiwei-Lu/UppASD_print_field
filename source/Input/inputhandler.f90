@@ -1170,6 +1170,17 @@ contains
             !------------------------------------------------------------------------
             ! START OF VARIABLES FOR PRINTING STT TORQUES
             !------------------------------------------------------------------------
+            case('do_prn_STT_torques')
+               read(ifile,*,iostat=i_err) do_prn_STT_torques
+               if(i_err/=0) write(*,*) 'ERROR: Reading ',trim(keyword),' data',i_err
+            
+            case('STT_torques_step') ! Time interval between printing the field
+               read(ifile,*,iostat=i_err) STT_torques_step
+               if(i_err/=0) write(*,*) 'ERROR: Reading ',trim(keyword),' data',i_err
+
+            case('STT_torques_buff')
+               read(ifile,*,iostat=i_err) STT_torques_buff
+               if(i_err/=0) write(*,*) 'ERROR: Reading ',trim(keyword),' data',i_err
 
             case('do_prn_torques')
                read(ifile,*,iostat=i_err) do_prn_torques
