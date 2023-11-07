@@ -163,17 +163,17 @@ contains
          if (mod(sstep-1,STT_torques_step)==0) then
             ! Write step to buffer
             call buffer_STT_torques(Natom, Mensemble, mstep-1,btorque,&
-               bcount_STT_torques, delta_t, real_time_measure, emom)
-            if (bcount_STT_torques==STT_torques_buff) then
-               ! write buffer to file
-               call prn_STT_torques(Natom, Mensemble, simid,real_time_measure)
-               bcount_STT_torques=1
-            else
-               bcount_STT_torques=bcount_STT_torques+1
-            endif
+               bcount_STT_torques, delta_t, real_time_measure, emom,simid)
+            ! if (bcount_STT_torques==STT_torques_buff) then
+            ! !    ! write buffer to file
+            !   call prn_STT_torques(Natom, Mensemble, simid,real_time_measure)
+            !     bcount_STT_torques=1
+            ! else
+            !   bcount_STT_torques=bcount_STT_torques+1
+            ! endif
 
          endif
-
+      !write(*,*) bcount_STT_torques
       endif
 
       ! Total site dependent field
@@ -609,7 +609,7 @@ contains
    end subroutine buffer_torques
 
     subroutine buffer_STT_torques(Natom, Mensemble, mstep,btorque,&
-         bcount_STT_torques,delta_t,real_time_measure,emom)
+         bcount_STT_torques,delta_t,real_time_measure,emom,simid)
       !
 
       implicit none
@@ -621,24 +621,51 @@ contains
       real(dblprec), intent(in) :: delta_t !< Current measurement time
       real(dblprec), dimension(3,Natom,Mensemble), intent(in) :: btorque          !< Current effective field from the hamiltonian
      
-      character(len=1), intent(in) :: real_time_measure !< Measurements displayed in real time
+     
       real(dblprec), dimension(:,:,:), intent(in)    :: emom   !< Current unit moment vector
 
       !.. Local scalar variables
-      integer :: i,k
-      
-      do k=1, Mensemble
-         do i=1, Natom
-          
-            STT_torquesb(1:3,i,bcount_STT_torques,k)=btorque(1:3,i,k)
-         end do
-      end do
+      integer :: i,k,j
+      character(len=8), intent(in) :: simid !< Name of the simulation
+      character(len=1), intent(in) :: real_time_measure !< Measurements displayed in real time
+
+      ! Local variables
+
+      character(len=30) :: filn
+
+      ! Print thermal fields to output file if specified
+      ! Remember to remove old data since the write statement appends new data to the file
      
-      if (real_time_measure=='Y') then
-         indxb_STT_torques(bcount_STT_torques)=mstep*delta_t
-      else
-         indxb_STT_torques(bcount_STT_torques)=mstep
-      endif
+
+      write(filn,'(''STTtorques.'',a,''.out'')') trim(simid)
+      open(ofileno,file=filn, position = 'APPEND',form = 'formatted')
+      
+         do j=1,Mensemble
+            do i=1,Natom
+                  write (ofileno,121) mstep, i, j, btorque(1:3,i,j), norm2(btorque(1:3,i,j))
+            end do
+         end do
+
+      close(ofileno)
+      
+      return
+
+      write(*,*) 'Error writing the internal field file'
+
+      121 format(i8,i8,i8,8x,4es12.4)
+
+      ! do k=1, Mensemble
+      !    do i=1, Natom
+      !       STT_torquesb(1:3,i,bcount_STT_torques,k)=btorque(1:3,i,k)
+      !       ! write(*,*) STT_torquesb(1:3,i,bcount_STT_torques,k)
+      !    end do
+      ! end do
+     
+      ! if (real_time_measure=='Y') then
+      !    indxb_STT_torques(bcount_STT_torques)=mstep*delta_t
+      ! else
+      !    indxb_STT_torques(bcount_STT_torques)=mstep
+      ! endif
 
    end subroutine buffer_STT_torques
 
